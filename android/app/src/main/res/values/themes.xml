@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.PixelTunes" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/pixel_primary</item>
+        <item name="colorPrimaryVariant">@color/pixel_dark</item>
+        <item name="colorOnPrimary">@color/pixel_dark</item>
+        <item name="colorSecondary">@color/pixel_secondary</item>
+        <item name="colorSecondaryVariant">@color/pixel_accent</item>
+        <item name="colorOnSecondary">@color/pixel_dark</item>
+        <item name="android:statusBarColor">@color/pixel_bg</item>
+        <item name="android:windowBackground">@color/pixel_bg</item>
+    </style>
+</resources>

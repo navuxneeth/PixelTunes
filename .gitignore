@@ -1,0 +1,51 @@
+# Android
+*.iml
+.gradle
+/local.properties
+/.idea/
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+release/
+
+# Gradle files
+.gradle/
+build/
+
+# Local configuration file (sdk path, etc)
+local.properties
+
+# Android Studio
+*.iml
+.idea/
+.navigation/
+captures/
+output.json
+
+# NDK
+obj/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Web
+node_modules/
+npm-debug.log
+yarn-error.log
+.env
+
+# Temporary files
+*.tmp
+*.temp
+*~

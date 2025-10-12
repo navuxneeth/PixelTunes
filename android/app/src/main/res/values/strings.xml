@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">PixelTunes</string>
+    <string name="play">Play</string>
+    <string name="pause">Pause</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+    <string name="select_audio">Select Audio Files</string>
+    <string name="no_tracks">No tracks loaded</string>
+    <string name="now_playing">Now Playing</string>
+    <string name="lossless_audio">Lossless Audio Player</string>
+    <string name="pixel_perfect">Pixel Perfect Sound</string>
+</resources>
