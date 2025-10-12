@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PixelTunes 🎵 - Lossless Audio Player</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1 class="title">
+                <span class="pixel-icon">🎮</span>
+                PIXELTUNES
+                <span class="pixel-icon">🎵</span>
+            </h1>
+            <p class="subtitle">Lossless Audio • Pixel Perfect</p>
+        </header>
+
+        <main class="player-container">
+            <div class="upload-zone" id="uploadZone">
+                <div class="upload-content">
+                    <div class="upload-icon">📁</div>
+                    <p class="upload-text">Drop audio files here</p>
+                    <p class="upload-subtext">Supports FLAC, WAV, ALAC, MP3, OGG</p>
+                    <input type="file" id="fileInput" accept="audio/*" multiple hidden>
+                    <button class="pixel-button" id="selectBtn">SELECT FILES</button>
+                </div>
+            </div>
+
+            <div class="now-playing" id="nowPlaying" style="display: none;">
+                <div class="track-info">
+                    <div class="album-art">🎼</div>
+                    <div class="track-details">
+                        <h2 class="track-title" id="trackTitle">No Track Selected</h2>
+                        <p class="track-artist" id="trackArtist">Unknown Artist</p>
+                    </div>
+                </div>
+
+                <div class="visualizer" id="visualizer">
+                    <canvas id="visualizerCanvas"></canvas>
+                </div>
+
+                <div class="controls">
+                    <div class="progress-bar">
+                        <div class="progress-time">
+                            <span id="currentTime">0:00</span>
+                            <span id="duration">0:00</span>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-fill" id="progressFill"></div>
+                            <input type="range" id="progressBar" min="0" max="100" value="0" step="0.1">
+                        </div>
+                    </div>
+
+                    <div class="control-buttons">
+                        <button class="control-btn" id="prevBtn" title="Previous">⏮️</button>
+                        <button class="control-btn play-btn" id="playBtn" title="Play/Pause">▶️</button>
+                        <button class="control-btn" id="nextBtn" title="Next">⏭️</button>
+                        <div class="volume-control">
+                            <button class="control-btn" id="muteBtn" title="Mute">🔊</button>
+                            <input type="range" id="volumeSlider" min="0" max="100" value="70" class="volume-slider">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="playlist" id="playlist" style="display: none;">
+                <h3 class="playlist-title">PLAYLIST</h3>
+                <ul class="playlist-items" id="playlistItems"></ul>
+            </div>
+        </main>
+
+        <footer class="footer">
+            <p>Made with ❤️ and pixels • Supports lossless audio formats</p>
+            <div class="stats">
+                <span id="fileCount">0 tracks loaded</span>
+            </div>
+        </footer>
+    </div>
+
+    <audio id="audioPlayer"></audio>
+    <script src="script.js"></script>
+</body>
+</html>

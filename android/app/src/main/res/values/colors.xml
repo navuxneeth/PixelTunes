@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="pixel_bg">#0F0F1E</color>
+    <color name="pixel_primary">#00FF9F</color>
+    <color name="pixel_secondary">#FF6B9D</color>
+    <color name="pixel_accent">#FFD700</color>
+    <color name="pixel_dark">#1A1A2E</color>
+    <color name="pixel_light">#F0F0F0</color>
+    <color name="black">#000000</color>
+    <color name="white">#FFFFFF</color>
+</resources>
