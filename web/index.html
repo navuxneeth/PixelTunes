@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="PixelTunes - A retro-style music player for the web">
+    <meta name="theme-color" content="#2A5E75">
+    <title>PixelTunes Web</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+</head>
+<body class="light-theme">
+    <!-- Top Bar -->
+    <header class="top-bar">
+        <h1 class="app-title">PIXELTUNES</h1>
+        <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+            </svg>
+        </button>
+    </header>
+
+    <main class="main-container">
+        <!-- Upload Section (shown when no songs) -->
+        <section id="uploadSection" class="upload-section">
+            <div class="upload-card">
+                <div class="upload-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M9 16h6v-6h4l-7-7-7 7h4zm-4 2h14v2H5z"/>
+                    </svg>
+                </div>
+                <h2>Upload Your Music</h2>
+                <p>Drag and drop audio files or folders here, or click to browse</p>
+                <input type="file" id="fileInput" multiple accept="audio/*" style="display: none;">
+                <input type="file" id="folderInput" webkitdirectory directory multiple style="display: none;">
+                <div class="upload-buttons">
+                    <button id="uploadFilesBtn" class="btn btn-primary">Upload Files</button>
+                    <button id="uploadFolderBtn" class="btn btn-secondary">Upload Folder</button>
+                </div>
+                <div class="supported-formats">
+                    <small>Supported: MP3, FLAC, WAV, OGG, M4A, AAC</small>
+                </div>
+            </div>
+        </section>
+
+        <!-- Player Section (shown when songs are loaded) -->
+        <section id="playerSection" class="player-section" style="display: none;">
+            <!-- Normal Player View -->
+            <div id="normalPlayerView" class="normal-player-view">
+                <!-- Album Art Display -->
+                <div class="album-art-container">
+                    <div class="album-art-card">
+                        <img id="albumArt" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect width='300' height='300' fill='%23BFD5CC'/%3E%3Ctext x='50%25' y='50%25' font-family='VT323' font-size='48' fill='%232A5E75' text-anchor='middle' dominant-baseline='middle'%3EPIXELTUNES%3C/text%3E%3C/svg%3E" alt="Album Art">
+                    </div>
+                </div>
+
+                <!-- Song Info -->
+                <div class="song-info">
+                    <h2 id="songTitle" class="song-title">No Song Playing</h2>
+                    <p id="artistName" class="artist-name">Unknown Artist</p>
+                    <p id="albumName" class="album-name">Unknown Album</p>
+                    <p id="yearText" class="year-text"></p>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="progress-container">
+                    <input type="range" id="seekBar" class="seek-bar" min="0" max="100" value="0">
+                    <div class="time-display">
+                        <span id="currentTime">0:00</span>
+                        <span id="totalTime">0:00</span>
+                    </div>
+                </div>
+
+                <!-- Playback Controls -->
+                <div class="controls-container">
+                    <button id="btnPrevious" class="control-btn" aria-label="Previous">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+                        </svg>
+                    </button>
+                    <button id="btnPlayPause" class="control-btn control-btn-main" aria-label="Play">
+                        <svg id="playIcon" width="40" height="40" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M8 5v14l11-7z"/>
+                        </svg>
+                        <svg id="pauseIcon" width="40" height="40" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+                            <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+                        </svg>
+                    </button>
+                    <button id="btnNext" class="control-btn" aria-label="Next">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Bottom Buttons -->
+                <div class="bottom-buttons">
+                    <button id="playlistBtn" class="btn btn-primary">PLAYLIST</button>
+                    <button id="uploadMoreBtn" class="btn btn-secondary">UPLOAD MORE</button>
+                    <button id="vinylModeBtn" class="btn btn-primary">VINYL PLAYER</button>
+                </div>
+            </div>
+
+            <!-- Vinyl Player View -->
+            <div id="vinylPlayerView" class="vinyl-player-view" style="display: none;">
+                <!-- Left Panel -->
+                <div class="vinyl-left-panel">
+                    <!-- Album Art -->
+                    <div class="vinyl-album-art">
+                        <img id="vinylAlbumArt" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Crect width='300' height='300' fill='%23BFD5CC'/%3E%3Ctext x='50%25' y='50%25' font-family='VT323' font-size='48' fill='%232A5E75' text-anchor='middle' dominant-baseline='middle'%3EPIXELTUNES%3C/text%3E%3C/svg%3E" alt="Album Art">
+                    </div>
+
+                    <!-- Song Info -->
+                    <div class="vinyl-song-info">
+                        <h2 id="vinylSongTitle" class="vinyl-title">No Song Playing</h2>
+                        <p id="vinylArtistName" class="vinyl-artist">Unknown Artist</p>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="vinyl-progress">
+                        <input type="range" id="vinylSeekBar" class="vinyl-seek-bar" min="0" max="100" value="0">
+                        <div class="vinyl-time-display">
+                            <span id="vinylCurrentTime">0:00</span>
+                            <span id="vinylTotalTime">0:00</span>
+                        </div>
+                    </div>
+
+                    <!-- Playlist Preview -->
+                    <div class="playlist-preview">
+                        <h3>UP NEXT</h3>
+                        <div id="playlistPreview" class="playlist-preview-items">
+                            <!-- Preview items will be added here -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Panel -->
+                <div class="vinyl-right-panel">
+                    <!-- Vinyl Disc Container -->
+                    <div class="vinyl-disc-container">
+                        <svg id="vinylDisc" class="vinyl-disc" viewBox="0 0 400 400">
+                            <!-- Vinyl disc with grooves -->
+                            <defs>
+                                <clipPath id="circleClip">
+                                    <circle cx="200" cy="200" r="180"/>
+                                </clipPath>
+                            </defs>
+                            
+                            <!-- Black vinyl background -->
+                            <circle cx="200" cy="200" r="180" fill="#1a1a1a"/>
+                            
+                            <!-- Concentric grooves -->
+                            <g id="grooves" opacity="0.3">
+                                <circle cx="200" cy="200" r="170" fill="none" stroke="#333" stroke-width="1"/>
+                                <circle cx="200" cy="200" r="160" fill="none" stroke="#333" stroke-width="1"/>
+                                <circle cx="200" cy="200" r="150" fill="none" stroke="#333" stroke-width="1"/>
+                                <circle cx="200" cy="200" r="140" fill="none" stroke="#333" stroke-width="1"/>
+                                <circle cx="200" cy="200" r="130" fill="none" stroke="#333" stroke-width="1"/>
+                                <circle cx="200" cy="200" r="120" fill="none" stroke="#333" stroke-width="1"/>
+                                <circle cx="200" cy="200" r="110" fill="none" stroke="#333" stroke-width="1"/>
+                                <circle cx="200" cy="200" r="100" fill="none" stroke="#333" stroke-width="1"/>
+                                <circle cx="200" cy="200" r="90" fill="none" stroke="#333" stroke-width="1"/>
+                                <circle cx="200" cy="200" r="80" fill="none" stroke="#333" stroke-width="1"/>
+                            </g>
+                            
+                            <!-- Center label -->
+                            <circle cx="200" cy="200" r="60" fill="#2A5E75"/>
+                            <circle cx="200" cy="200" r="50" fill="#1a1a1a"/>
+                            
+                            <!-- Center album art -->
+                            <foreignObject x="140" y="140" width="120" height="120" clip-path="url(#circleClip)">
+                                <div xmlns="http://www.w3.org/1999/xhtml" style="width: 120px; height: 120px; border-radius: 50%; overflow: hidden;">
+                                    <img id="vinylCenterArt" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='%23BFD5CC'/%3E%3C/svg%3E" style="width: 100%; height: 100%; object-fit: cover;"/>
+                                </div>
+                            </foreignObject>
+                            
+                            <!-- Center hole -->
+                            <circle cx="200" cy="200" r="10" fill="#0a0a0a"/>
+                        </svg>
+
+                        <!-- Needle Arm -->
+                        <div id="needleArm" class="needle-arm">
+                            <svg viewBox="0 0 200 300" width="100" height="150">
+                                <!-- Wooden arm -->
+                                <rect x="10" y="0" width="30" height="280" fill="#8B4513" rx="5"/>
+                                <rect x="12" y="2" width="26" height="276" fill="#A0522D" rx="4"/>
+                                <!-- Metal parts -->
+                                <circle cx="25" cy="10" r="8" fill="#888"/>
+                                <circle cx="25" cy="10" r="5" fill="#555"/>
+                                <!-- Needle tip -->
+                                <polygon points="25,280 20,290 30,290" fill="#C0C0C0"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Control Buttons -->
+                    <div class="vinyl-controls">
+                        <button id="vinylBtnPrevious" class="vinyl-control-btn" aria-label="Previous">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
+                            </svg>
+                        </button>
+                        <button id="vinylBtnNext" class="vinyl-control-btn" aria-label="Next">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Attribution Footer -->
+                <div class="attribution-footer">
+                    <p>Made by Navaneeth Sankar K P</p>
+                    <div class="attribution-links">
+                        <a href="https://www.linkedin.com/in/navaneeth-sankar-k-p" target="_blank" class="btn btn-link">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M19 3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h14m-.5 15.5v-5.3a3.26 3.26 0 0 0-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 0 1 1.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 0 0 1.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 0 0-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/>
+                            </svg>
+                            LinkedIn
+                        </a>
+                        <a href="https://github.com/navuxneeth/PixelTunes" target="_blank" class="btn btn-link">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/>
+                            </svg>
+                            @navuxneeth/PixelTunes
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Bottom Buttons -->
+                <div class="vinyl-bottom-buttons">
+                    <button id="vinylPlaylistBtn" class="btn btn-primary">PLAYLIST</button>
+                    <button id="normalModeBtn" class="btn btn-secondary">NORMAL PLAYER</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- Playlist Modal -->
+        <div id="playlistModal" class="modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>PLAYLIST</h2>
+                    <button id="closePlaylist" class="icon-btn" aria-label="Close">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="playlist-controls">
+                    <button id="clearPlaylistBtn" class="btn btn-danger">Clear Playlist</button>
+                </div>
+                <div id="playlistContainer" class="playlist-container">
+                    <!-- Playlist items will be dynamically added here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Audio Element -->
+    <audio id="audioPlayer" preload="auto"></audio>
+
+    <!-- Loading Indicator -->
+    <div id="loadingIndicator" class="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>Loading songs...</p>
+    </div>
+
+    <script src="js/vinyl-player.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

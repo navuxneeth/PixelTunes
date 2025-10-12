@@ -1,0 +1,24 @@
+{
+    "name": "PixelTunes Web",
+    "short_name": "PixelTunes",
+    "description": "A retro-style music player for the web",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#D3E4DC",
+    "theme_color": "#2A5E75",
+    "orientation": "any",
+    "icons": [
+        {
+            "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='192' height='192'%3E%3Crect width='192' height='192' fill='%232A5E75'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='48' fill='%23D3E4DC' text-anchor='middle' dominant-baseline='middle'%3EPT%3C/text%3E%3C/svg%3E",
+            "sizes": "192x192",
+            "type": "image/svg+xml"
+        },
+        {
+            "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='512' height='512'%3E%3Crect width='512' height='512' fill='%232A5E75'/%3E%3Ctext x='50%25' y='50%25' font-family='Arial' font-size='128' fill='%23D3E4DC' text-anchor='middle' dominant-baseline='middle'%3EPT%3C/text%3E%3C/svg%3E",
+            "sizes": "512x512",
+            "type": "image/svg+xml"
+        }
+    ],
+    "categories": ["music", "entertainment"],
+    "lang": "en-US"
+}

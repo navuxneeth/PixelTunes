@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="180dp"
+    android:viewportWidth="120"
+    android:viewportHeight="180">
+    
+    <!-- Needle arm base (top pivot) -->
+    <path
+        android:fillColor="#8B7355"
+        android:pathData="M55,10 L65,10 L65,25 L55,25 Z" />
+    
+    <!-- Main arm -->
+    <path
+        android:fillColor="#A0826D"
+        android:pathData="M58,25 L62,25 L65,160 L55,160 Z" />
+    
+    <!-- Needle holder -->
+    <path
+        android:fillColor="#666666"
+        android:pathData="M52,160 L68,160 L65,170 L55,170 Z" />
+    
+    <!-- Needle tip -->
+    <path
+        android:fillColor="#333333"
+        android:pathData="M58,170 L62,170 L60,180 Z" />
+    
+</vector>
