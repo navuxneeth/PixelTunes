@@ -7,6 +7,16 @@ class PixelTunesPlayer {
         this.isPlaying = false;
         this.audioPlayer = document.getElementById('audioPlayer');
         this.isUserSeeking = false;
+        this.isShuffle = false;
+        this.repeatMode = 'off'; // 'off', 'all', 'one'
+        this.isMuted = false;
+        this.lastVolume = 100;
+        
+        // Audio Context for visualizer
+        this.audioContext = null;
+        this.analyser = null;
+        this.dataArray = null;
+        this.source = null;
         
         this.initializeElements();
         this.loadPlaylistFromStorage();
@@ -14,6 +24,7 @@ class PixelTunesPlayer {
         this.setupAudioEventListeners();
         this.setupDragAndDrop();
         this.applyTheme();
+        this.initializeAudioVisualizer();
         
         // Initialize vinyl player
         this.vinylPlayer = new VinylPlayer(
@@ -50,8 +61,20 @@ class PixelTunesPlayer {
         this.btnPlayPause = document.getElementById('btnPlayPause');
         this.btnPrevious = document.getElementById('btnPrevious');
         this.btnNext = document.getElementById('btnNext');
+        this.btnShuffle = document.getElementById('btnShuffle');
+        this.btnRepeat = document.getElementById('btnRepeat');
         this.playIcon = document.getElementById('playIcon');
         this.pauseIcon = document.getElementById('pauseIcon');
+        
+        // Volume controls
+        this.btnMute = document.getElementById('btnMute');
+        this.volumeSlider = document.getElementById('volumeSlider');
+        this.volumeValue = document.getElementById('volumeValue');
+        this.volumeIcon = document.getElementById('volumeIcon');
+        this.muteIcon = document.getElementById('muteIcon');
+        
+        // Visualizer
+        this.visualizerCanvas = document.getElementById('visualizer');
         
         // Song Info
         this.songTitle = document.getElementById('songTitle');
@@ -79,8 +102,14 @@ class PixelTunesPlayer {
         this.clearPlaylistBtn = document.getElementById('clearPlaylistBtn');
         this.uploadMoreBtn = document.getElementById('uploadMoreBtn');
         
-        // Theme
+        // Theme and Help
         this.themeToggle = document.getElementById('themeToggle');
+        this.helpBtn = document.getElementById('helpBtn');
+        this.helpModal = document.getElementById('helpModal');
+        this.closeHelp = document.getElementById('closeHelp');
+        
+        // Toast
+        this.toast = document.getElementById('toast');
     }
     
     setupEventListeners() {
@@ -88,6 +117,12 @@ class PixelTunesPlayer {
         this.btnPlayPause.addEventListener('click', () => this.togglePlayPause());
         this.btnPrevious.addEventListener('click', () => this.playPrevious());
         this.btnNext.addEventListener('click', () => this.playNext());
+        this.btnShuffle?.addEventListener('click', () => this.toggleShuffle());
+        this.btnRepeat?.addEventListener('click', () => this.cycleRepeatMode());
+        
+        // Volume controls
+        this.btnMute?.addEventListener('click', () => this.toggleMute());
+        this.volumeSlider?.addEventListener('input', (e) => this.updateVolume(e.target.value));
         
         // Seek bar
         this.seekBar.addEventListener('input', () => {
@@ -121,18 +156,67 @@ class PixelTunesPlayer {
             }
         });
         
-        // Theme toggle
-        this.themeToggle.addEventListener('click', () => this.toggleTheme());
+        this.helpModal?.addEventListener('click', (e) => {
+            if (e.target === this.helpModal) {
+                this.hideHelp();
+            }
+        });
         
-        // Keyboard shortcuts
+        // Theme toggle and Help
+        this.themeToggle.addEventListener('click', () => this.toggleTheme());
+        this.helpBtn?.addEventListener('click', () => this.showHelp());
+        this.closeHelp?.addEventListener('click', () => this.hideHelp());
+        
+        // Enhanced keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
-                e.preventDefault();
-                this.togglePlayPause();
-            } else if (e.code === 'ArrowLeft') {
-                this.audioPlayer.currentTime = Math.max(0, this.audioPlayer.currentTime - 5);
-            } else if (e.code === 'ArrowRight') {
-                this.audioPlayer.currentTime = Math.min(this.audioPlayer.duration, this.audioPlayer.currentTime + 5);
+            // Skip if typing in an input
+            if (e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+            
+            switch(e.key.toLowerCase()) {
+                case ' ':
+                    e.preventDefault();
+                    this.togglePlayPause();
+                    break;
+                case 'arrowleft':
+                    e.preventDefault();
+                    this.audioPlayer.currentTime = Math.max(0, this.audioPlayer.currentTime - 5);
+                    this.showToast('⏪ -5s');
+                    break;
+                case 'arrowright':
+                    e.preventDefault();
+                    this.audioPlayer.currentTime = Math.min(this.audioPlayer.duration, this.audioPlayer.currentTime + 5);
+                    this.showToast('⏩ +5s');
+                    break;
+                case 'arrowup':
+                    e.preventDefault();
+                    this.updateVolume(Math.min(100, parseInt(this.volumeSlider.value) + 10));
+                    break;
+                case 'arrowdown':
+                    e.preventDefault();
+                    this.updateVolume(Math.max(0, parseInt(this.volumeSlider.value) - 10));
+                    break;
+                case 'm':
+                    this.toggleMute();
+                    break;
+                case 's':
+                    this.toggleShuffle();
+                    break;
+                case 'r':
+                    this.cycleRepeatMode();
+                    break;
+                case 'n':
+                    this.playNext();
+                    break;
+                case 'p':
+                    this.playPrevious();
+                    break;
+                case '?':
+                    this.showHelp();
+                    break;
+                case 'escape':
+                    this.hideHelp();
+                    this.hidePlaylist();
+                    break;
             }
         });
     }
@@ -327,11 +411,193 @@ class PixelTunesPlayer {
     playNext() {
         if (this.playlist.length === 0) return;
         
-        const newIndex = (this.currentIndex + 1) % this.playlist.length;
+        let newIndex;
+        
+        if (this.repeatMode === 'one') {
+            // Repeat current song
+            this.audioPlayer.currentTime = 0;
+            if (this.isPlaying) {
+                this.audioPlayer.play();
+            }
+            return;
+        }
+        
+        if (this.isShuffle) {
+            // Random next song (excluding current)
+            if (this.playlist.length > 1) {
+                do {
+                    newIndex = Math.floor(Math.random() * this.playlist.length);
+                } while (newIndex === this.currentIndex);
+            } else {
+                newIndex = 0;
+            }
+        } else {
+            // Sequential next
+            newIndex = (this.currentIndex + 1) % this.playlist.length;
+            
+            // If repeat is off and we're at the end, stop
+            if (this.repeatMode === 'off' && newIndex === 0 && this.currentIndex === this.playlist.length - 1) {
+                this.audioPlayer.pause();
+                this.isPlaying = false;
+                return;
+            }
+        }
+        
         this.loadSong(newIndex);
         if (this.isPlaying) {
             this.audioPlayer.play();
         }
+    }
+    
+    toggleShuffle() {
+        this.isShuffle = !this.isShuffle;
+        this.btnShuffle.classList.toggle('active', this.isShuffle);
+        const message = this.isShuffle ? '🔀 Shuffle ON' : '➡️ Shuffle OFF';
+        this.showToast(message);
+        localStorage.setItem('pixeltunes_shuffle', this.isShuffle);
+    }
+    
+    cycleRepeatMode() {
+        const modes = ['off', 'all', 'one'];
+        const currentIndex = modes.indexOf(this.repeatMode);
+        this.repeatMode = modes[(currentIndex + 1) % modes.length];
+        
+        // Update button state
+        this.btnRepeat.classList.toggle('active', this.repeatMode !== 'off');
+        this.btnRepeat.classList.toggle('repeat-one', this.repeatMode === 'one');
+        
+        // Update aria label and title
+        const labels = {
+            'off': 'Repeat Off',
+            'all': 'Repeat All',
+            'one': 'Repeat One'
+        };
+        const icons = {
+            'off': '⤴️ Repeat OFF',
+            'all': '🔁 Repeat ALL',
+            'one': '🔂 Repeat ONE'
+        };
+        
+        this.btnRepeat.setAttribute('aria-label', labels[this.repeatMode]);
+        this.btnRepeat.setAttribute('title', labels[this.repeatMode]);
+        this.showToast(icons[this.repeatMode]);
+        localStorage.setItem('pixeltunes_repeat', this.repeatMode);
+    }
+    
+    updateVolume(value) {
+        value = Math.max(0, Math.min(100, value));
+        this.volumeSlider.value = value;
+        this.audioPlayer.volume = value / 100;
+        this.volumeValue.textContent = value + '%';
+        
+        // Update mute icon if volume is 0
+        if (value === 0) {
+            this.isMuted = true;
+            this.volumeIcon.style.display = 'none';
+            this.muteIcon.style.display = 'block';
+        } else {
+            this.isMuted = false;
+            this.volumeIcon.style.display = 'block';
+            this.muteIcon.style.display = 'none';
+            this.lastVolume = value;
+        }
+        
+        localStorage.setItem('pixeltunes_volume', value);
+    }
+    
+    toggleMute() {
+        if (this.isMuted) {
+            // Unmute
+            this.updateVolume(this.lastVolume || 100);
+            this.showToast('🔊 Unmuted');
+        } else {
+            // Mute
+            this.lastVolume = this.volumeSlider.value;
+            this.updateVolume(0);
+            this.showToast('🔇 Muted');
+        }
+    }
+    
+    initializeAudioVisualizer() {
+        if (!this.visualizerCanvas) return;
+        
+        const canvas = this.visualizerCanvas;
+        const canvasCtx = canvas.getContext('2d');
+        
+        // Set canvas size
+        canvas.width = canvas.offsetWidth;
+        canvas.height = canvas.offsetHeight;
+        
+        // Initialize on first play
+        this.audioPlayer.addEventListener('play', () => {
+            if (!this.audioContext) {
+                this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                this.analyser = this.audioContext.createAnalyser();
+                this.source = this.audioContext.createMediaElementSource(this.audioPlayer);
+                this.source.connect(this.analyser);
+                this.analyser.connect(this.audioContext.destination);
+                
+                this.analyser.fftSize = 64;
+                const bufferLength = this.analyser.frequencyBinCount;
+                this.dataArray = new Uint8Array(bufferLength);
+                
+                this.drawVisualizer(canvasCtx, bufferLength);
+            }
+        }, { once: true });
+    }
+    
+    drawVisualizer(canvasCtx, bufferLength) {
+        const canvas = this.visualizerCanvas;
+        const draw = () => {
+            requestAnimationFrame(draw);
+            
+            if (!this.analyser) return;
+            
+            this.analyser.getByteFrequencyData(this.dataArray);
+            
+            // Clear canvas with background color
+            const isDark = document.body.classList.contains('dark-theme');
+            canvasCtx.fillStyle = isDark ? '#1F4A5D' : '#BFD5CC';
+            canvasCtx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw bars
+            const barWidth = (canvas.width / bufferLength) * 0.8;
+            const gap = (canvas.width / bufferLength) * 0.2;
+            
+            for (let i = 0; i < bufferLength; i++) {
+                const barHeight = (this.dataArray[i] / 255) * canvas.height;
+                
+                // Pixel-perfect colors
+                const colors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#2A5E75'];
+                const colorIndex = Math.floor((i / bufferLength) * colors.length);
+                canvasCtx.fillStyle = colors[colorIndex];
+                
+                const x = i * (barWidth + gap);
+                const y = canvas.height - barHeight;
+                
+                // Draw pixelated bar
+                canvasCtx.fillRect(x, y, barWidth, barHeight);
+            }
+        };
+        
+        draw();
+    }
+    
+    showHelp() {
+        this.helpModal.classList.add('active');
+    }
+    
+    hideHelp() {
+        this.helpModal.classList.remove('active');
+    }
+    
+    showToast(message) {
+        this.toast.textContent = message;
+        this.toast.classList.add('show');
+        
+        setTimeout(() => {
+            this.toast.classList.remove('show');
+        }, 2000);
     }
     
     updatePlayPauseButton(playing) {
@@ -518,6 +784,25 @@ class PixelTunesPlayer {
         const savedTheme = localStorage.getItem('pixeltunes_theme') || 'light';
         document.body.classList.remove('light-theme', 'dark-theme');
         document.body.classList.add(`${savedTheme}-theme`);
+        
+        // Load saved settings
+        const savedVolume = localStorage.getItem('pixeltunes_volume');
+        if (savedVolume !== null) {
+            this.updateVolume(parseInt(savedVolume));
+        }
+        
+        const savedShuffle = localStorage.getItem('pixeltunes_shuffle');
+        if (savedShuffle === 'true') {
+            this.isShuffle = true;
+            this.btnShuffle?.classList.add('active');
+        }
+        
+        const savedRepeat = localStorage.getItem('pixeltunes_repeat');
+        if (savedRepeat) {
+            this.repeatMode = savedRepeat;
+            this.btnRepeat?.classList.toggle('active', this.repeatMode !== 'off');
+            this.btnRepeat?.classList.toggle('repeat-one', this.repeatMode === 'one');
+        }
     }
     
     showLoading() {
