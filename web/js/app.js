@@ -7,13 +7,29 @@ class PixelTunesPlayer {
         this.isPlaying = false;
         this.audioPlayer = document.getElementById('audioPlayer');
         this.isUserSeeking = false;
+        this.isShuffle = false;
+        this.repeatMode = 'none'; // 'none', 'all', 'one'
+        this.volume = 0.8;
+        this.isMuted = false;
+        this.previousVolume = 0.8;
+        this.showNotifications = true;
+        this.showVisualizer = true;
+        this.crtEffect = false;
+        this.visualizerBars = [];
+        this.analyser = null;
+        this.animationId = null;
         
         this.initializeElements();
         this.loadPlaylistFromStorage();
+        this.loadSettings();
         this.setupEventListeners();
         this.setupAudioEventListeners();
         this.setupDragAndDrop();
+        this.setupVisualizer();
         this.applyTheme();
+        
+        // Set initial volume
+        this.audioPlayer.volume = this.volume;
         
         // Initialize vinyl player
         this.vinylPlayer = new VinylPlayer(
@@ -81,6 +97,29 @@ class PixelTunesPlayer {
         
         // Theme
         this.themeToggle = document.getElementById('themeToggle');
+        
+        // New features
+        this.volumeSlider = document.getElementById('volumeSlider');
+        this.volumeBtn = document.getElementById('volumeBtn');
+        this.volumeIcon = document.getElementById('volumeIcon');
+        this.mutedIcon = document.getElementById('mutedIcon');
+        this.shuffleBtn = document.getElementById('shuffleBtn');
+        this.repeatBtn = document.getElementById('repeatBtn');
+        this.helpBtn = document.getElementById('helpBtn');
+        this.helpModal = document.getElementById('helpModal');
+        this.closeHelp = document.getElementById('closeHelp');
+        this.settingsBtn = document.getElementById('settingsBtn');
+        this.settingsModal = document.getElementById('settingsModal');
+        this.closeSettings = document.getElementById('closeSettings');
+        this.notificationToast = document.getElementById('notificationToast');
+        this.toastMessage = document.getElementById('toastMessage');
+        this.audioVisualizer = document.getElementById('audioVisualizer');
+        this.crtToggle = document.getElementById('crtToggle');
+        this.crtSwitch = document.getElementById('crtSwitch');
+        this.visualizerToggle = document.getElementById('visualizerToggle');
+        this.visualizerSwitch = document.getElementById('visualizerSwitch');
+        this.notificationsToggle = document.getElementById('notificationsToggle');
+        this.notificationsSwitch = document.getElementById('notificationsSwitch');
     }
     
     setupEventListeners() {
@@ -124,15 +163,66 @@ class PixelTunesPlayer {
         // Theme toggle
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
         
+        // Volume controls
+        this.volumeSlider?.addEventListener('input', (e) => this.setVolume(e.target.value / 100));
+        this.volumeBtn?.addEventListener('click', () => this.toggleMute());
+        
+        // Playback modes
+        this.shuffleBtn?.addEventListener('click', () => this.toggleShuffle());
+        this.repeatBtn?.addEventListener('click', () => this.cycleRepeat());
+        
+        // Help modal
+        this.helpBtn?.addEventListener('click', () => this.showHelp());
+        this.closeHelp?.addEventListener('click', () => this.hideHelp());
+        this.helpModal?.addEventListener('click', (e) => {
+            if (e.target === this.helpModal) this.hideHelp();
+        });
+        
+        // Settings modal
+        this.settingsBtn?.addEventListener('click', () => this.showSettings());
+        this.closeSettings?.addEventListener('click', () => this.hideSettings());
+        this.settingsModal?.addEventListener('click', (e) => {
+            if (e.target === this.settingsModal) this.hideSettings();
+        });
+        
+        // Settings toggles
+        this.crtToggle?.addEventListener('click', () => this.toggleCRT());
+        this.visualizerToggle?.addEventListener('click', () => this.toggleVisualizer());
+        this.notificationsToggle?.addEventListener('click', () => this.toggleNotifications());
+        
         // Keyboard shortcuts
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'Space' && e.target.tagName !== 'INPUT') {
+            if (e.target.tagName === 'INPUT' && e.target.type === 'text') return;
+            
+            if (e.code === 'Space') {
                 e.preventDefault();
                 this.togglePlayPause();
-            } else if (e.code === 'ArrowLeft') {
+            } else if (e.code === 'ArrowLeft' && !e.shiftKey) {
+                e.preventDefault();
                 this.audioPlayer.currentTime = Math.max(0, this.audioPlayer.currentTime - 5);
-            } else if (e.code === 'ArrowRight') {
+            } else if (e.code === 'ArrowRight' && !e.shiftKey) {
+                e.preventDefault();
                 this.audioPlayer.currentTime = Math.min(this.audioPlayer.duration, this.audioPlayer.currentTime + 5);
+            } else if (e.code === 'ArrowLeft' && e.shiftKey) {
+                e.preventDefault();
+                this.playPrevious();
+            } else if (e.code === 'ArrowRight' && e.shiftKey) {
+                e.preventDefault();
+                this.playNext();
+            } else if (e.code === 'ArrowUp') {
+                e.preventDefault();
+                this.setVolume(Math.min(1, this.volume + 0.1));
+                this.volumeSlider.value = this.volume * 100;
+            } else if (e.code === 'ArrowDown') {
+                e.preventDefault();
+                this.setVolume(Math.max(0, this.volume - 0.1));
+                this.volumeSlider.value = this.volume * 100;
+            } else if (e.key === 'm' || e.key === 'M') {
+                e.preventDefault();
+                this.toggleMute();
+            } else if (e.key === '?') {
+                e.preventDefault();
+                this.showHelp();
             }
         });
     }
@@ -292,6 +382,11 @@ class PixelTunesPlayer {
         
         this.updatePlaylistUI();
         
+        // Show notification
+        if (this.showNotifications && this.playlist.length > 1) {
+            this.showNotification(`🎵 ${song.title}`);
+        }
+        
         // Notify vinyl player of song change
         if (this.vinylPlayer) {
             this.vinylPlayer.onSongChange();
@@ -327,7 +422,15 @@ class PixelTunesPlayer {
     playNext() {
         if (this.playlist.length === 0) return;
         
-        const newIndex = (this.currentIndex + 1) % this.playlist.length;
+        let newIndex;
+        if (this.repeatMode === 'one') {
+            newIndex = this.currentIndex;
+        } else if (this.isShuffle) {
+            newIndex = Math.floor(Math.random() * this.playlist.length);
+        } else {
+            newIndex = (this.currentIndex + 1) % this.playlist.length;
+        }
+        
         this.loadSong(newIndex);
         if (this.isPlaying) {
             this.audioPlayer.play();
@@ -537,6 +640,245 @@ class PixelTunesPlayer {
         div.textContent = text;
         return div.innerHTML;
     }
+    
+    // Volume Control Methods
+    setVolume(value) {
+        this.volume = Math.max(0, Math.min(1, value));
+        this.audioPlayer.volume = this.volume;
+        this.updateVolumeUI();
+        this.saveSettings();
+    }
+    
+    toggleMute() {
+        if (this.isMuted) {
+            this.isMuted = false;
+            this.audioPlayer.volume = this.previousVolume;
+            this.volume = this.previousVolume;
+        } else {
+            this.isMuted = true;
+            this.previousVolume = this.volume;
+            this.audioPlayer.volume = 0;
+        }
+        this.updateVolumeUI();
+    }
+    
+    updateVolumeUI() {
+        if (this.isMuted || this.volume === 0) {
+            this.volumeIcon.style.display = 'none';
+            this.mutedIcon.style.display = 'block';
+        } else {
+            this.volumeIcon.style.display = 'block';
+            this.mutedIcon.style.display = 'none';
+        }
+        if (this.volumeSlider) {
+            this.volumeSlider.value = this.isMuted ? 0 : this.volume * 100;
+        }
+    }
+    
+    // Playback Mode Methods
+    toggleShuffle() {
+        this.isShuffle = !this.isShuffle;
+        if (this.isShuffle) {
+            this.shuffleBtn.classList.add('active');
+        } else {
+            this.shuffleBtn.classList.remove('active');
+        }
+        this.saveSettings();
+    }
+    
+    cycleRepeat() {
+        const modes = ['none', 'all', 'one'];
+        const currentIndex = modes.indexOf(this.repeatMode);
+        this.repeatMode = modes[(currentIndex + 1) % modes.length];
+        
+        if (this.repeatMode === 'none') {
+            this.repeatBtn.classList.remove('active');
+            this.repeatBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
+            </svg>`;
+        } else if (this.repeatMode === 'all') {
+            this.repeatBtn.classList.add('active');
+            this.repeatBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
+            </svg>`;
+        } else {
+            this.repeatBtn.classList.add('active');
+            this.repeatBtn.innerHTML = `<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
+                <text x="12" y="16" text-anchor="middle" font-size="10" font-weight="bold">1</text>
+            </svg>`;
+        }
+        this.saveSettings();
+    }
+    
+    // Modal Methods
+    showHelp() {
+        this.helpModal.classList.add('active');
+    }
+    
+    hideHelp() {
+        this.helpModal.classList.remove('active');
+    }
+    
+    showSettings() {
+        this.settingsModal.classList.add('active');
+    }
+    
+    hideSettings() {
+        this.settingsModal.classList.remove('active');
+    }
+    
+    // Settings Methods
+    toggleCRT() {
+        this.crtEffect = !this.crtEffect;
+        if (this.crtEffect) {
+            document.body.classList.add('crt-effect');
+            this.crtSwitch.classList.add('active');
+        } else {
+            document.body.classList.remove('crt-effect');
+            this.crtSwitch.classList.remove('active');
+        }
+        this.saveSettings();
+    }
+    
+    toggleVisualizer() {
+        this.showVisualizer = !this.showVisualizer;
+        if (this.showVisualizer) {
+            this.audioVisualizer.style.display = 'flex';
+            this.visualizerSwitch.classList.add('active');
+        } else {
+            this.audioVisualizer.style.display = 'none';
+            this.visualizerSwitch.classList.remove('active');
+        }
+        this.saveSettings();
+    }
+    
+    toggleNotifications() {
+        this.showNotifications = !this.showNotifications;
+        if (this.showNotifications) {
+            this.notificationsSwitch.classList.add('active');
+        } else {
+            this.notificationsSwitch.classList.remove('active');
+        }
+        this.saveSettings();
+    }
+    
+    // Notification Toast
+    showNotification(message) {
+        this.toastMessage.textContent = message;
+        this.notificationToast.classList.add('show');
+        setTimeout(() => {
+            this.notificationToast.classList.remove('show');
+        }, 3000);
+    }
+    
+    // Audio Visualizer
+    setupVisualizer() {
+        // Create visualizer bars
+        for (let i = 0; i < 32; i++) {
+            const bar = document.createElement('div');
+            bar.className = 'visualizer-bar';
+            bar.style.height = '4px';
+            this.audioVisualizer.appendChild(bar);
+            this.visualizerBars.push(bar);
+        }
+        
+        // Create audio context and analyser
+        try {
+            const AudioContext = window.AudioContext || window.webkitAudioContext;
+            const audioContext = new AudioContext();
+            this.analyser = audioContext.createAnalyser();
+            this.analyser.fftSize = 64;
+            
+            const source = audioContext.createMediaElementSource(this.audioPlayer);
+            source.connect(this.analyser);
+            this.analyser.connect(audioContext.destination);
+            
+            this.startVisualizer();
+        } catch (e) {
+            console.error('Web Audio API not supported:', e);
+        }
+    }
+    
+    startVisualizer() {
+        if (!this.analyser) return;
+        
+        const bufferLength = this.analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        
+        const animate = () => {
+            this.animationId = requestAnimationFrame(animate);
+            
+            if (!this.showVisualizer) return;
+            
+            this.analyser.getByteFrequencyData(dataArray);
+            
+            for (let i = 0; i < this.visualizerBars.length; i++) {
+                const value = dataArray[i] || 0;
+                const height = Math.max(4, (value / 255) * 60);
+                this.visualizerBars[i].style.height = `${height}px`;
+                
+                if (this.isPlaying) {
+                    this.visualizerBars[i].classList.add('active');
+                } else {
+                    this.visualizerBars[i].classList.remove('active');
+                }
+            }
+        };
+        
+        animate();
+    }
+    
+    // Settings Persistence
+    saveSettings() {
+        try {
+            const settings = {
+                volume: this.volume,
+                isShuffle: this.isShuffle,
+                repeatMode: this.repeatMode,
+                showNotifications: this.showNotifications,
+                showVisualizer: this.showVisualizer,
+                crtEffect: this.crtEffect
+            };
+            localStorage.setItem('pixeltunes_settings', JSON.stringify(settings));
+        } catch (e) {
+            console.error('Error saving settings:', e);
+        }
+    }
+    
+    loadSettings() {
+        try {
+            const settings = JSON.parse(localStorage.getItem('pixeltunes_settings'));
+            if (settings) {
+                this.volume = settings.volume !== undefined ? settings.volume : 0.8;
+                this.isShuffle = settings.isShuffle || false;
+                this.repeatMode = settings.repeatMode || 'none';
+                this.showNotifications = settings.showNotifications !== false;
+                this.showVisualizer = settings.showVisualizer !== false;
+                this.crtEffect = settings.crtEffect || false;
+                
+                // Apply settings to UI
+                if (this.volumeSlider) this.volumeSlider.value = this.volume * 100;
+                if (this.isShuffle && this.shuffleBtn) this.shuffleBtn.classList.add('active');
+                if (this.crtEffect) document.body.classList.add('crt-effect');
+                if (!this.showVisualizer && this.audioVisualizer) {
+                    this.audioVisualizer.style.display = 'none';
+                    this.visualizerSwitch?.classList.remove('active');
+                }
+                if (!this.showNotifications && this.notificationsSwitch) {
+                    this.notificationsSwitch.classList.remove('active');
+                }
+                if (this.crtEffect && this.crtSwitch) {
+                    this.crtSwitch.classList.add('active');
+                }
+                
+                this.updateVolumeUI();
+            }
+        } catch (e) {
+            console.error('Error loading settings:', e);
+        }
+    }
+    
     
     async registerServiceWorker() {
         if ('serviceWorker' in navigator) {
