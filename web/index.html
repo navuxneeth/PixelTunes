@@ -16,11 +16,18 @@
     <!-- Top Bar -->
     <header class="top-bar">
         <h1 class="app-title">PIXELTUNES</h1>
-        <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
-            </svg>
-        </button>
+        <div class="header-buttons">
+            <button id="helpBtn" class="icon-btn" aria-label="Keyboard shortcuts" title="Keyboard Shortcuts (?)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M11 18h2v-2h-2v2zm1-16C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm0-14c-2.21 0-4 1.79-4 4h2c0-1.1.9-2 2-2s2 .9 2 2c0 2-3 1.75-3 5h2c0-2.25 3-2.5 3-5 0-2.21-1.79-4-4-4z"/>
+                </svg>
+            </button>
+            <button id="themeToggle" class="icon-btn" aria-label="Toggle theme">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+            </button>
+        </div>
     </header>
 
     <main class="main-container">
@@ -76,6 +83,11 @@
 
                 <!-- Playback Controls -->
                 <div class="controls-container">
+                    <button id="btnShuffle" class="control-btn" aria-label="Shuffle" title="Shuffle">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
+                        </svg>
+                    </button>
                     <button id="btnPrevious" class="control-btn" aria-label="Previous">
                         <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
                             <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
@@ -94,6 +106,30 @@
                             <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
                         </svg>
                     </button>
+                    <button id="btnRepeat" class="control-btn" aria-label="Repeat Off" title="Repeat: Off">
+                        <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Volume Control -->
+                <div class="volume-container">
+                    <button id="btnMute" class="control-btn volume-btn" aria-label="Mute">
+                        <svg id="volumeIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+                        </svg>
+                        <svg id="muteIcon" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" style="display: none;">
+                            <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z"/>
+                        </svg>
+                    </button>
+                    <input type="range" id="volumeSlider" class="volume-slider" min="0" max="100" value="100">
+                    <span id="volumeValue" class="volume-value">100%</span>
+                </div>
+
+                <!-- Audio Visualizer -->
+                <div class="visualizer-container">
+                    <canvas id="visualizer" class="visualizer-canvas"></canvas>
                 </div>
 
                 <!-- Bottom Buttons -->
@@ -259,6 +295,66 @@
         </div>
     </main>
 
+    <!-- Keyboard Shortcuts Modal -->
+    <div id="helpModal" class="modal">
+        <div class="modal-content help-modal">
+            <div class="modal-header">
+                <h2>⌨️ KEYBOARD SHORTCUTS</h2>
+                <button id="closeHelp" class="icon-btn" aria-label="Close">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="shortcuts-container">
+                <div class="shortcut-item">
+                    <kbd>SPACE</kbd>
+                    <span>Play / Pause</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>←</kbd>
+                    <span>Seek Backward 5s</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>→</kbd>
+                    <span>Seek Forward 5s</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>↑</kbd>
+                    <span>Volume Up</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>↓</kbd>
+                    <span>Volume Down</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>M</kbd>
+                    <span>Mute / Unmute</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>S</kbd>
+                    <span>Toggle Shuffle</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>R</kbd>
+                    <span>Toggle Repeat</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>N</kbd>
+                    <span>Next Track</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>P</kbd>
+                    <span>Previous Track</span>
+                </div>
+                <div class="shortcut-item">
+                    <kbd>?</kbd>
+                    <span>Show This Help</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Audio Element -->
     <audio id="audioPlayer" preload="auto"></audio>
 
@@ -267,6 +363,9 @@
         <div class="spinner"></div>
         <p>Loading songs...</p>
     </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast"></div>
 
     <script src="js/vinyl-player.js"></script>
     <script src="js/app.js"></script>
